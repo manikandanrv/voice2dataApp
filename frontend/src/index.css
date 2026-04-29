@@ -1,0 +1,374 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  /* Modern Palette */
+  --primary-blue: #2563eb;
+  /* Blue 600 */
+  --primary-hover: #1d4ed8;
+  /* Blue 700 */
+
+  --surface-white: #ffffff;
+  --surface-gray: #f8fafc;
+  /* Slate 50 */
+
+  --text-main: #1e293b;
+  /* Slate 800 */
+  --text-muted: #64748b;
+  /* Slate 500 */
+  --text-light: #94a3b8;
+  /* Slate 400 */
+
+  --border-color: #e2e8f0;
+  /* Slate 200 */
+  --border-focus: #3b82f6;
+  /* Blue 500 */
+
+  --success-green: #10b981;
+  /* Emerald 500 */
+  --danger-red: #ef4444;
+  /* Red 500 */
+  --warning-yellow: #f59e0b;
+  /* Amber 500 */
+
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  background-color: var(--surface-gray);
+  color: var(--text-main);
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0;
+  font-weight: 600;
+}
+
+/* --- Layout Components --- */
+
+.container {
+  max-width: 1280px;
+  margin: 2rem auto;
+  padding: 0 1.5rem;
+}
+
+.card {
+  background-color: var(--surface-white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.page-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 2rem;
+  text-align: left;
+  /* Aligned left looks cleaner usually */
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 1rem;
+}
+
+/* --- Navbar Modernization --- */
+.navbar {
+  background-color: var(--surface-white);
+  height: 64px;
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: center;
+  box-shadow: var(--shadow-sm);
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.nav-link {
+  color: var(--text-muted);
+  font-weight: 500;
+  padding: 0 1rem;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  transition: color 0.2s, background-color 0.2s;
+  font-size: 0.95rem;
+  border-bottom: 2px solid transparent;
+}
+
+.nav-link:hover {
+  color: var(--primary-blue);
+  background-color: var(--surface-gray);
+}
+
+.nav-item {
+  height: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* Modern Dropdown */
+.dropdown-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: var(--surface-white);
+  min-width: 240px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-color);
+  padding: 0.5rem;
+  z-index: 1001;
+  animation: slideDown 0.15s ease-out;
+}
+
+.submenu-dropdown {
+  display: none;
+  position: absolute;
+  left: 100%;
+  /* Align exactly with the edge */
+  top: 0;
+  /* Align with parent top */
+  background-color: var(--surface-white);
+  min-width: 220px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-color);
+  padding: 0.5rem 0;
+  z-index: 1002;
+  margin-left: -1px;
+  /* Small overlap to avoid gap */
+}
+
+/* Show nested submenu on hover */
+.nested-dropdown-container:hover>.submenu-dropdown {
+  display: block;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.nav-item:hover .dropdown-menu {
+  display: block;
+}
+
+.dropdown-item {
+  display: block;
+  padding: 0.75rem 1rem;
+  color: var(--text-main);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  transition: background-color 0.15s;
+}
+
+.dropdown-item:hover {
+  background-color: var(--surface-gray);
+  color: var(--primary-blue);
+}
+
+/* Specific overrides can remain, but modernized */
+.dropdown-menu.dropdown-green {
+  background-color: #ecfdf5;
+  /* Very Light Green */
+  border-color: #10b981;
+}
+
+.dropdown-menu.dropdown-green .dropdown-item {
+  color: #065f46;
+  /* Dark Green Text */
+  border-bottom: none;
+}
+
+.dropdown-menu.dropdown-green .dropdown-item:hover {
+  background-color: #10b981;
+  color: white;
+}
+
+/* --- Forms & Inputs --- */
+
+.form-section {
+  background: var(--surface-white);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 2rem;
+}
+
+.form-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.form-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  min-width: 140px;
+  text-align: right;
+}
+
+.form-control {
+  padding: 0.625rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  color: var(--text-main);
+  transition: all 0.2s;
+  background-color: var(--surface-white);
+  width: 100%;
+  max-width: 280px;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.form-control:disabled {
+  background-color: var(--surface-gray);
+  color: var(--text-light);
+}
+
+/* --- Buttons --- */
+
+.btn-add {
+  background-color: var(--text-main);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-add:hover {
+  opacity: 0.9;
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: flex-end;
+  /* Align right for modern feel */
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.btn-action {
+  padding: 0.75rem 2rem;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: transform 0.1s;
+}
+
+.btn-action:active {
+  transform: scale(0.98);
+}
+
+.btn-save {
+  background-color: var(--success-green);
+  color: white;
+}
+
+.btn-clear {
+  background-color: var(--surface-white);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+}
+
+.btn-list {
+  background-color: var(--surface-white);
+  border: 1px solid var(--danger-red);
+  color: var(--danger-red);
+}
+
+/* --- Accordions / Sections --- */
+
+.section-header {
+  background-color: var(--surface-gray);
+  color: var(--text-main);
+  padding: 1rem 1.5rem;
+  font-weight: 600;
+  font-size: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  margin-top: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: background-color 0.2s;
+}
+
+.section-header:hover {
+  background-color: #f1f5f9;
+  /* Slate 100 */
+}
+
+.section-body {
+  border: 1px solid var(--border-color);
+  border-top: none;
+  padding: 2rem;
+  background-color: var(--surface-white);
+  border-bottom-left-radius: var(--radius-lg);
+  border-bottom-right-radius: var(--radius-lg);
+  /* Fix header radius when open */
+  margin-top: -5px;
+  padding-top: 1.5rem;
+}
+
+/* --- Radio Group --- */
+.radio-group {
+  background-color: var(--surface-gray);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  display: flex;
+  gap: 1.5rem;
+}
