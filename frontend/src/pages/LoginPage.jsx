@@ -80,7 +80,7 @@ const LoginPage = () => {
                         marginBottom: '0.5rem',
                         letterSpacing: '-0.025em'
                     }}>
-                        CFN ERP Login
+                        Voice2Data ERP Login
                     </h1>
                     <p style={{ color: '#64748b', fontSize: '0.95rem' }}>
                         Welcome back! Please enter your details.

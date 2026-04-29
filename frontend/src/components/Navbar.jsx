@@ -10,7 +10,7 @@ export default function Navbar() {
         return (
             <nav className="navbar" style={{ justifyContent: 'center' }}>
                 <Link to="/" className="nav-link" style={{ fontWeight: 800, fontSize: '1.25rem', color: '#2563eb' }}>
-                    CFN ERP
+                    Voice2Data ERP - An AI first- voice first ERP for textiles and manufacturing
                 </Link>
             </nav>
         );
