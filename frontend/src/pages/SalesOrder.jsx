@@ -430,18 +430,27 @@ const SalesOrder = () => {
     };
 
     // Voice schema — describes the JSON the backend should extract from speech.
-    // `items` is an array; the LLM should populate one entry per line item the
-    // user mentions. When the user uses ordinal phrasing ("first item", "2nd
-    // item", "third"), set `position` to the 1-based index so the UI places
-    // (or merges) the data into that exact slot.
-    const voiceSchema = {
-        order_no: 'Order Number, e.g. "SO-2026-001"',
-        customer_name: 'Customer Name (free text, e.g. "Acme Corp")',
-        order_date: 'Order Date in YYYY-MM-DD format',
-        status: 'Order status — one of: Draft, Confirmed, Invoiced, Cancelled',
-        remarks: 'Order-level remarks or notes',
-        items: 'Array of line items. Each element is an object with keys: position (integer, 1-based; set when the user says "1st item", "second item", "third item", etc.), item_name (string), quantity (number), rate (number, price per unit), uom (one of kg, nos, m, pcs, bag), size (specification string, e.g. "210D/3"), color (specification string, e.g. "Blue"). Always wrap multiple items in this array even if the user lists them sequentially. If the user only updates one field of a specific item ("for the second item, color is red"), return a single element with position=2 and just the spoken fields.',
-    };
+    // The customer_name description is grounded with the actual master list so
+    // the LLM picks the canonical spelling instead of guessing (e.g. "Akmi"
+    // spoken → "Acme Corporation" returned).
+    const voiceSchema = useMemo(() => {
+        const customerNames = customers
+            .map(c => c.customer_name)
+            .filter(Boolean);
+
+        const customerGrounding = customerNames.length > 0
+            ? ` IMPORTANT: Match the spoken customer to one of these EXISTING customers in the master list and return the EXACT canonical name (preserving capitalization and punctuation) from this list. Allow for phonetic variations, partial matches, and minor speech-to-text errors. Only return a name not in this list if the user explicitly says it is a NEW customer or none of the entries below are a reasonable match. Existing customers: [${customerNames.map(n => JSON.stringify(n)).join(', ')}].`
+            : '';
+
+        return {
+            order_no: 'Order Number, e.g. "SO-2026-001"',
+            customer_name: `Customer Name (free text, e.g. "Acme Corp").${customerGrounding}`,
+            order_date: 'Order Date in YYYY-MM-DD format',
+            status: 'Order status — one of: Draft, Confirmed, Invoiced, Cancelled',
+            remarks: 'Order-level remarks or notes',
+            items: 'Array of line items. Each element is an object with keys: position (integer, 1-based; set when the user says "1st item", "second item", "third item", etc.), item_name (string), quantity (number), rate (number, price per unit), uom (one of kg, nos, m, pcs, bag), size (specification string, e.g. "210D/3"), color (specification string, e.g. "Blue"). Always wrap multiple items in this array even if the user lists them sequentially. If the user only updates one field of a specific item ("for the second item, color is red"), return a single element with position=2 and just the spoken fields.',
+        };
+    }, [customers]);
 
     return (
         <div className="p-6 max-w-7xl mx-auto space-y-6">
