@@ -38,6 +38,53 @@ const emptyItem = () => ({
 const formatCurrency = (n) =>
     Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+// ----- Voice helpers -----
+const ORDINAL_WORDS = {
+    first: 1, '1st': 1, one: 1,
+    second: 2, '2nd': 2, two: 2,
+    third: 3, '3rd': 3, three: 3,
+    fourth: 4, '4th': 4, four: 4,
+    fifth: 5, '5th': 5, five: 5,
+    sixth: 6, '6th': 6, six: 6,
+    seventh: 7, '7th': 7, seven: 7,
+    eighth: 8, '8th': 8, eight: 8,
+    ninth: 9, '9th': 9, nine: 9,
+    tenth: 10, '10th': 10, ten: 10,
+};
+
+const parsePosition = (val) => {
+    if (val === null || val === undefined || val === '') return null;
+    if (typeof val === 'number' && Number.isInteger(val) && val >= 1) return val;
+    if (typeof val === 'string') {
+        const k = val.trim().toLowerCase().replace(/\s+/g, '');
+        if (ORDINAL_WORDS[k]) return ORDINAL_WORDS[k];
+        const m = val.match(/(\d+)/);
+        if (m) {
+            const n = parseInt(m[1], 10);
+            if (n >= 1) return n;
+        }
+    }
+    return null;
+};
+
+const normalizeVoiceItem = (raw) => {
+    if (!raw || typeof raw !== 'object') return {};
+    const out = {};
+    if (raw.item_name) out.item_name = String(raw.item_name);
+    if (raw.quantity !== undefined && raw.quantity !== null && raw.quantity !== '') {
+        out.quantity = String(raw.quantity);
+    }
+    if (raw.rate !== undefined && raw.rate !== null && raw.rate !== '') {
+        out.rate = String(raw.rate);
+    }
+    if (raw.uom) out.uom = String(raw.uom).toLowerCase();
+    const size = raw.size ?? raw.spec_size ?? raw.specifications?.size;
+    if (size) out.spec_size = String(size);
+    const color = raw.color ?? raw.spec_color ?? raw.specifications?.color;
+    if (color) out.spec_color = String(color);
+    return out;
+};
+
 const SalesOrder = () => {
     // List
     const [orders, setOrders] = useState([]);
@@ -108,24 +155,73 @@ const SalesOrder = () => {
     // Reset to page 1 when filters change
     useEffect(() => { setCurrentPage(1); }, [searchTerm, filterDate]);
 
-    // Voice
+    // Voice — merges header fields and supports an `items` array with
+    // optional 1-based `position` so utterances like "first item …" / "2nd item …"
+    // place data in the correct slot. Single-item legacy payloads are appended.
     const handleVoiceData = (data) => {
-        if (!data) return;
-        if (data.item_name && (data.quantity || data.rate)) {
-            setCurrentItem(prev => ({
-                ...prev,
-                item_name: data.item_name,
-                quantity: data.quantity ?? prev.quantity,
-                rate: data.rate ?? prev.rate,
-            }));
-        } else {
-            setFormData(prev => ({
-                ...prev,
-                ...(data.order_no && { order_no: data.order_no }),
-                ...(data.customer_name && { customer_name: data.customer_name }),
-                ...(data.order_date && { order_date: data.order_date }),
-            }));
-            if (mode !== 'create') openCreate();
+        if (!data || typeof data !== 'object') return;
+
+        const wasOpen = mode === 'create';
+
+        setFormData(prev => {
+            const base = wasOpen ? { ...prev } : emptyForm();
+
+            // Header fields
+            if (data.order_no) base.order_no = String(data.order_no);
+            if (data.customer_name) base.customer_name = String(data.customer_name);
+            if (data.order_date) {
+                const d = new Date(data.order_date);
+                if (!isNaN(d.getTime())) {
+                    base.order_date = d.toISOString().split('T')[0];
+                }
+            }
+            if (data.status) {
+                const s = STATUS_OPTIONS.find(
+                    o => o.toLowerCase() === String(data.status).toLowerCase()
+                );
+                if (s) base.status = s;
+            }
+            if (data.remarks) base.remarks = String(data.remarks);
+
+            // Items: prefer explicit `items` array; otherwise treat top-level
+            // item fields as a single line item to append.
+            const incoming = Array.isArray(data.items)
+                ? data.items
+                : (data.item_name || data.quantity || data.rate || data.size || data.color)
+                    ? [{
+                        item_name: data.item_name,
+                        quantity: data.quantity,
+                        rate: data.rate,
+                        uom: data.uom,
+                        size: data.size,
+                        color: data.color,
+                        position: data.position ?? data.index,
+                    }]
+                    : [];
+
+            if (incoming.length > 0) {
+                const items = [...base.items];
+                incoming.forEach(raw => {
+                    const norm = normalizeVoiceItem(raw);
+                    const pos = parsePosition(raw?.position ?? raw?.index ?? raw?.line);
+                    if (pos !== null) {
+                        const idx = pos - 1;
+                        while (items.length < idx) items.push(emptyItem());
+                        items[idx] = { ...(items[idx] || emptyItem()), ...norm };
+                    } else {
+                        items.push({ ...emptyItem(), ...norm });
+                    }
+                });
+                base.items = items;
+            }
+
+            return base;
+        });
+
+        if (!wasOpen) {
+            setCurrentItem(emptyItem());
+            setViewing(null);
+            setMode('create');
         }
     };
 
@@ -283,14 +379,18 @@ const SalesOrder = () => {
         return m ? m[1].trim() : '—';
     };
 
-    // Voice schema
+    // Voice schema — describes the JSON the backend should extract from speech.
+    // `items` is an array; the LLM should populate one entry per line item the
+    // user mentions. When the user uses ordinal phrasing ("first item", "2nd
+    // item", "third"), set `position` to the 1-based index so the UI places
+    // (or merges) the data into that exact slot.
     const voiceSchema = {
-        order_no: 'Order Number',
-        customer_name: 'Customer Name',
-        order_date: 'Order Date',
-        item_name: 'Item Name (line item)',
-        quantity: 'Quantity (line item)',
-        rate: 'Rate (line item)',
+        order_no: 'Order Number, e.g. "SO-2026-001"',
+        customer_name: 'Customer Name (free text, e.g. "Acme Corp")',
+        order_date: 'Order Date in YYYY-MM-DD format',
+        status: 'Order status — one of: Draft, Confirmed, Invoiced, Cancelled',
+        remarks: 'Order-level remarks or notes',
+        items: 'Array of line items. Each element is an object with keys: position (integer, 1-based; set when the user says "1st item", "second item", "third item", etc.), item_name (string), quantity (number), rate (number, price per unit), uom (one of kg, nos, m, pcs, bag), size (specification string, e.g. "210D/3"), color (specification string, e.g. "Blue"). Always wrap multiple items in this array even if the user lists them sequentially. If the user only updates one field of a specific item ("for the second item, color is red"), return a single element with position=2 and just the spoken fields.',
     };
 
     return (
