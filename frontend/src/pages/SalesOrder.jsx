@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
     Plus, Search, FileText, Trash2, ChevronLeft, ChevronRight, X,
-    Eye, Calendar, Loader2, Receipt, Package
+    Eye, Calendar, Loader2, Receipt, Package, ChevronDown, Check, UserPlus,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import VoiceInputFAB from '../components/VoiceInputFAB';
@@ -19,6 +19,7 @@ const STATUS_STYLES = {
 
 const emptyForm = () => ({
     order_no: '',
+    customer_id: null,
     customer_name: '',
     order_date: new Date().toISOString().split('T')[0],
     status: 'Draft',
@@ -109,6 +110,51 @@ const SalesOrder = () => {
     const [formData, setFormData] = useState(emptyForm());
     const [currentItem, setCurrentItem] = useState(emptyItem());
 
+    // Customer master
+    const [customers, setCustomers] = useState([]);
+    const [customersLoading, setCustomersLoading] = useState(false);
+
+    const fetchCustomers = async () => {
+        setCustomersLoading(true);
+        try {
+            const res = await fetch(`${API_BASE}/master/customers/list?limit=10000`);
+            if (res.ok) {
+                const data = await res.json();
+                // Endpoint returns a flat array
+                setCustomers(Array.isArray(data) ? data : (data.items || []));
+            }
+        } catch (e) {
+            console.error('Error fetching customers:', e);
+        } finally {
+            setCustomersLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchCustomers();
+    }, []);
+
+    const createCustomer = async (name) => {
+        try {
+            const res = await fetch(`${API_BASE}/master/customers`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ customer_name: name.trim(), active: true }),
+            });
+            if (res.ok) {
+                const created = await res.json();
+                setCustomers(prev => [...prev, created]);
+                return created;
+            }
+            const err = await res.json().catch(() => ({}));
+            alert(`Failed to create customer: ${err.detail || res.statusText}`);
+        } catch (e) {
+            console.error(e);
+            alert('Network error creating customer');
+        }
+        return null;
+    };
+
     const grandTotal = useMemo(
         () => formData.items.reduce(
             (s, i) => s + (parseFloat(i.quantity || 0) * parseFloat(i.rate || 0)), 0
@@ -168,7 +214,15 @@ const SalesOrder = () => {
 
             // Header fields
             if (data.order_no) base.order_no = String(data.order_no);
-            if (data.customer_name) base.customer_name = String(data.customer_name);
+            if (data.customer_name) {
+                const spoken = String(data.customer_name).trim();
+                base.customer_name = spoken;
+                // Try to match against the master list (case-insensitive)
+                const match = customers.find(
+                    c => c.customer_name?.toLowerCase() === spoken.toLowerCase()
+                );
+                base.customer_id = match ? match.id : null;
+            }
             if (data.order_date) {
                 const d = new Date(data.order_date);
                 if (!isNaN(d.getTime())) {
@@ -274,8 +328,8 @@ const SalesOrder = () => {
             alert('Order Number is required');
             return;
         }
-        if (!formData.customer_name.trim()) {
-            alert('Customer Name is required');
+        if (!formData.customer_id) {
+            alert('Please select a customer from the list (or create one in Customer Master first).');
             return;
         }
         if (formData.items.length === 0) {
@@ -285,17 +339,13 @@ const SalesOrder = () => {
 
         setSubmitting(true);
         try {
-            const remarksParts = [
-                `Customer: ${formData.customer_name.trim()}`,
-                ...(formData.remarks ? [formData.remarks] : []),
-            ];
             const payload = {
                 order_no: formData.order_no.trim(),
-                customer_id: 0,
+                customer_id: formData.customer_id,
                 order_date: new Date(formData.order_date).toISOString(),
                 status: formData.status,
                 proforma_invoice_no: null,
-                remarks: remarksParts.join('\n'),
+                remarks: formData.remarks || '',
                 items: formData.items.map(i => {
                     const qty = parseFloat(i.quantity || 0);
                     const rate = parseFloat(i.rate || 0);
@@ -610,6 +660,9 @@ const SalesOrder = () => {
                                         submitting={submitting}
                                         onSubmit={handleSubmit}
                                         onCancel={closeDrawer}
+                                        customers={customers}
+                                        customersLoading={customersLoading}
+                                        onCreateCustomer={createCustomer}
                                     />
                                 )}
 
@@ -634,6 +687,7 @@ const SalesOrder = () => {
 const CreateForm = ({
     formData, setFormData, currentItem, setCurrentItem,
     addItem, removeItem, grandTotal, submitting, onSubmit, onCancel,
+    customers, customersLoading, onCreateCustomer,
 }) => (
     <form onSubmit={onSubmit} className="space-y-5">
         <div className="grid grid-cols-2 gap-4">
@@ -657,15 +711,36 @@ const CreateForm = ({
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-            <Field label="Customer Name" required>
-                <input
-                    type="text"
-                    value={formData.customer_name}
-                    onChange={e => setFormData({ ...formData, customer_name: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300"
-                    placeholder="Acme Corp"
+            <Field label="Customer" required>
+                <CustomerCombobox
+                    value={formData.customer_id}
+                    inputValue={formData.customer_name}
+                    customers={customers}
+                    loading={customersLoading}
+                    onChange={(c) => setFormData({
+                        ...formData,
+                        customer_id: c ? c.id : null,
+                        customer_name: c ? c.customer_name : '',
+                    })}
+                    onInputChange={(text) => setFormData({
+                        ...formData,
+                        customer_name: text,
+                        // typing invalidates a previously selected id
+                        customer_id: customers.find(
+                            c => c.customer_name?.toLowerCase() === text.toLowerCase()
+                        )?.id ?? null,
+                    })}
+                    onCreate={async (name) => {
+                        const created = await onCreateCustomer(name);
+                        if (created) {
+                            setFormData({
+                                ...formData,
+                                customer_id: created.id,
+                                customer_name: created.customer_name,
+                            });
+                        }
+                    }}
                 />
-                <p className="text-[11px] text-gray-400 mt-1">New customers are auto-created.</p>
             </Field>
             <Field label="Status">
                 <select
@@ -941,6 +1016,137 @@ const ViewOrder = ({ order, onGenerateProforma, onDelete, getCustomerName }) => 
         </div>
     </div>
 );
+
+// ----- Customer autocomplete -----
+const CustomerCombobox = ({
+    value, inputValue, customers, loading, onChange, onInputChange, onCreate,
+}) => {
+    const [open, setOpen] = useState(false);
+    const [creating, setCreating] = useState(false);
+    const containerRef = React.useRef(null);
+
+    useEffect(() => {
+        const onDocClick = (e) => {
+            if (containerRef.current && !containerRef.current.contains(e.target)) {
+                setOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', onDocClick);
+        return () => document.removeEventListener('mousedown', onDocClick);
+    }, []);
+
+    const query = (inputValue || '').toLowerCase().trim();
+    const matches = query
+        ? customers.filter(c => c.customer_name?.toLowerCase().includes(query))
+        : customers.slice(0, 50); // show first 50 when no query
+
+    const exactMatch = customers.some(
+        c => c.customer_name?.toLowerCase() === query && query.length > 0
+    );
+    const showCreateOption = query.length > 0 && !exactMatch;
+
+    const handleCreate = async () => {
+        if (!query) return;
+        setCreating(true);
+        await onCreate(inputValue.trim());
+        setCreating(false);
+        setOpen(false);
+    };
+
+    const isSelected = !!value;
+
+    return (
+        <div ref={containerRef} className="relative">
+            <div className={`flex items-center gap-1 bg-gray-50 border rounded-lg focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-300 ${
+                isSelected ? 'border-indigo-200' : 'border-gray-200'
+            }`}>
+                <input
+                    type="text"
+                    value={inputValue}
+                    onChange={e => { onInputChange(e.target.value); setOpen(true); }}
+                    onFocus={() => setOpen(true)}
+                    placeholder={loading ? 'Loading customers…' : 'Search or pick a customer…'}
+                    className="flex-1 px-3 py-2 bg-transparent rounded-lg outline-none"
+                />
+                {isSelected && (
+                    <button
+                        type="button"
+                        onClick={() => { onChange(null); setOpen(true); }}
+                        className="p-1 text-gray-400 hover:text-red-500"
+                        title="Clear"
+                    >
+                        <X size={14} />
+                    </button>
+                )}
+                <button
+                    type="button"
+                    onClick={() => setOpen(o => !o)}
+                    className="p-2 text-gray-400 hover:text-gray-600"
+                    aria-label="Toggle list"
+                >
+                    <ChevronDown size={16} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
+                </button>
+            </div>
+
+            {isSelected && (
+                <p className="text-[11px] text-emerald-600 mt-1 flex items-center gap-1">
+                    <Check size={11} /> Selected: ID {value}
+                </p>
+            )}
+
+            {open && (
+                <div className="absolute z-10 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-lg">
+                    {loading ? (
+                        <div className="px-3 py-3 text-sm text-gray-400 flex items-center gap-2">
+                            <Loader2 size={14} className="animate-spin" /> Loading…
+                        </div>
+                    ) : matches.length === 0 && !showCreateOption ? (
+                        <div className="px-3 py-3 text-sm text-gray-400">
+                            No customers match.
+                        </div>
+                    ) : (
+                        <ul className="py-1">
+                            {matches.map(c => (
+                                <li key={c.id}>
+                                    <button
+                                        type="button"
+                                        onClick={() => { onChange(c); setOpen(false); }}
+                                        className={`w-full text-left px-3 py-2 text-sm hover:bg-indigo-50 flex items-center justify-between gap-2 ${
+                                            value === c.id ? 'bg-indigo-50' : ''
+                                        }`}
+                                    >
+                                        <div className="min-w-0">
+                                            <div className="font-medium text-gray-800 truncate">{c.customer_name}</div>
+                                            {(c.mobile_no || c.address) && (
+                                                <div className="text-xs text-gray-500 truncate">
+                                                    {[c.mobile_no, c.address].filter(Boolean).join(' · ')}
+                                                </div>
+                                            )}
+                                        </div>
+                                        {value === c.id && <Check size={14} className="text-indigo-600 shrink-0" />}
+                                    </button>
+                                </li>
+                            ))}
+                            {showCreateOption && (
+                                <li className="border-t border-gray-100">
+                                    <button
+                                        type="button"
+                                        onClick={handleCreate}
+                                        disabled={creating}
+                                        className="w-full text-left px-3 py-2 text-sm hover:bg-emerald-50 flex items-center gap-2 text-emerald-700 disabled:opacity-50"
+                                    >
+                                        {creating ? <Loader2 size={14} className="animate-spin" /> : <UserPlus size={14} />}
+                                        Create &ldquo;{inputValue.trim()}&rdquo; as new customer
+                                    </button>
+                                </li>
+                            )}
+                        </ul>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
 
 // ----- Tiny helpers -----
 const Field = ({ label, required, children }) => (

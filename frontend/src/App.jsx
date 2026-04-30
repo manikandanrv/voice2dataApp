@@ -42,6 +42,7 @@ import BundleEntryProduction from './pages/BundleEntryProduction';
 import NettingProduction from './pages/NettingProduction';
 import SalesOrder from './pages/SalesOrder';
 import SalesDispatch from './pages/SalesDispatch';
+import CustomerMaster from './pages/CustomerMaster';
 import StockManagement from './pages/StockManagement';
 
 import GateEntry from './components/GateEntry';
@@ -150,6 +151,7 @@ function App() {
             <Route path="/production/netting-production" element={<ProtectedRoute><NettingProduction /></ProtectedRoute>} />
             <Route path="/sales/orders" element={<ProtectedRoute moduleName="sales-entry"><SalesOrder /></ProtectedRoute>} />
             <Route path="/sales/dispatch" element={<ProtectedRoute moduleName="dispatch"><SalesDispatch /></ProtectedRoute>} />
+            <Route path="/sales/customer-master" element={<ProtectedRoute><CustomerMaster /></ProtectedRoute>} />
             <Route path="/stock/management" element={<ProtectedRoute moduleName="stores-receipt"><StockManagement /></ProtectedRoute>} />
 
             {/* Fallback for other routes */}
