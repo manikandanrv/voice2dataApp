@@ -104,6 +104,8 @@ export const MASTER_GROUPS = {
             items: [
                 { label: 'Winder Size Parser', path: '/master/winder-size-parser' },
                 { label: 'Twine Size Parser', path: '/master/twine-size-parser' },
+                { label: 'TFO Primary Size Parser', path: '/master/tfo-primary-size-parser' },
+                { label: 'Doubler Primary Size Parser', path: '/master/doubler-primary-size-parser' },
             ],
         }],
     },
