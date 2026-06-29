@@ -24,9 +24,14 @@ export default function AppShell() {
     if (!token) {
         return (
             <div className="app-shell app-shell--unauth">
-                <header className="topbar topbar--center">
-                    <NavLink to="/" className="topbar__brand">
-                        Voice2Data ERP — An AI-first, voice-first ERP for textiles & manufacturing
+                <header className="topbar">
+                    <NavLink to="/" className="topbar__brand topbar__brand--logo">
+                        <img src="/v2d-logo.png" alt="Voice2Data ERP" height={20} />
+                        <span>Voice2Data ERP</span>
+                    </NavLink>
+                    <div className="topbar__spacer" />
+                    <NavLink to="/login" className="topbar__login-link">
+                        Sign In
                     </NavLink>
                 </header>
                 <main className="app-main app-main--full">

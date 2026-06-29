@@ -73,6 +73,11 @@ const LoginPage = () => {
                 border: '1px solid #f1f5f9'
             }}>
                 <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                    <img
+                        src="/v2d-logo.png"
+                        alt="Voice2Data ERP"
+                        style={{ height: '52px', marginBottom: '1.25rem' }}
+                    />
                     <h1 style={{
                         fontSize: '1.875rem',
                         fontWeight: '800',
@@ -194,7 +199,7 @@ const LoginPage = () => {
                     fontSize: '0.875rem',
                     color: '#94a3b8'
                 }}>
-                    Chidambaram Fishnets ERP System
+                    Voice2Data ERP — AI-first, voice-first ERP for modern industry
                 </div>
             </div>
         </div>

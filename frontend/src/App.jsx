@@ -62,6 +62,7 @@ import MasterGroupLanding, { MASTER_GROUPS } from './pages/master/MasterGroupLan
 
 import { AuthProvider, useAuth } from './context/AuthContext';
 import LoginPage from './pages/LoginPage';
+import LandingPage from './pages/LandingPage';
 
 const ProtectedRoute = ({ children, moduleName }) => {
   const { token, loading, hasPermission } = useAuth();
@@ -78,6 +79,13 @@ const ProtectedRoute = ({ children, moduleName }) => {
   return children;
 };
 
+// Public marketing landing for visitors; Dashboard for authenticated users.
+const HomeRoute = () => {
+  const { token, loading } = useAuth();
+  if (loading) return <div>Loading...</div>;
+  return token ? <Dashboard /> : <LandingPage />;
+};
+
 function App() {
   return (
     <AuthProvider>
@@ -86,7 +94,7 @@ function App() {
           <Route element={<AppShell />}>
             <Route path="/login" element={<LoginPage />} />
 
-            <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/" element={<HomeRoute />} />
             <Route path="/entry/gate-entry" element={<ProtectedRoute moduleName="grn-entry"><GateEntry /></ProtectedRoute>} />
             <Route path="/entry/goods-receipt" element={<ProtectedRoute moduleName="grn-entry"><GoodsReceipt /></ProtectedRoute>} />
             <Route path="/quality/tfo-winder-plan" element={<ProtectedRoute><TFOWinderPlan /></ProtectedRoute>} />

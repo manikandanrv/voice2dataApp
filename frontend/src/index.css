@@ -413,6 +413,32 @@ h6 {
   letter-spacing: -0.01em;
 }
 
+.topbar__brand--logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.topbar__brand--logo img {
+  display: block;
+}
+
+.topbar__login-link {
+  font-weight: 600;
+  color: var(--primary-blue);
+  text-decoration: none;
+  font-size: 0.95rem;
+  padding: 0.45rem 1.1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.topbar__login-link:hover {
+  background-color: var(--surface-gray);
+  border-color: var(--primary-blue);
+}
+
 .topbar__hamburger {
   display: none;
   width: 36px;
