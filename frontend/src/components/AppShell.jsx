@@ -26,7 +26,7 @@ export default function AppShell() {
             <div className="app-shell app-shell--unauth">
                 <header className="topbar">
                     <NavLink to="/" className="topbar__brand topbar__brand--logo">
-                        <img src="/v2d-logo.png" alt="Voice2Data ERP" height={16} />
+                        <img src="/v2d-logo.png" alt="Voice2Data ERP" height={20} width={50} />
                         <span>Voice2Data ERP</span>
                     </NavLink>
                     <div className="topbar__spacer" />
